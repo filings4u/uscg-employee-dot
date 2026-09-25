@@ -41,7 +41,7 @@ async function invoke(name,body={}){
   if(!r.ok||d.error)throw Object.assign(new Error(d.error||`Request failed (${r.status}).`),{status:r.status,payload:d});
   return d;
 }
-async function access(){const b={requested_portal_code:C.portalCode,requested_page:page()};if(stored())b.membership_id=stored();return invoke('workforce-session-context',b)}
+async function access(){const b={requested_portal_code:C.portalCode,requested_page:page()};if(stored())b.membership_id=stored();return invoke('dot-session-context',b)}
 function darkenHex(hex,amount=.22){const m=/^#([0-9a-f]{6})$/i.exec(String(hex||''));if(!m)return'#0b2747';const n=parseInt(m[1],16),f=1-amount,r=Math.max(0,Math.round(((n>>16)&255)*f)),g=Math.max(0,Math.round(((n>>8)&255)*f)),b=Math.max(0,Math.round((n&255)*f));return'#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function setBrandLogo(src,alt){const logo=document.querySelector('.brand img');if(!logo)return;const fallback='/assets/img/logo.png';logo.classList.remove('brand-logo-ready');logo.alt=alt||C.label;logo.onload=()=>logo.classList.add('brand-logo-ready');logo.onerror=()=>{if(logo.dataset.fallback==='1'){logo.classList.add('brand-logo-ready');return}logo.dataset.fallback='1';logo.alt=C.label;logo.src=fallback};logo.dataset.fallback=src===fallback?'1':'0';logo.src=src||fallback;if(logo.complete&&logo.naturalWidth)logo.classList.add('brand-logo-ready')}
 function applyBranding(b,ctx){if(!b)return;const primary=/^#[0-9a-f]{6}$/i.test(b.primary_color||'')?b.primary_color:'#24467f',accent=/^#[0-9a-f]{6}$/i.test(b.accent_color||'')?b.accent_color:'#ff6b00',name=isCtpaCustomer(ctx)?ctpaName(ctx):(b.portal_name||(C.kind==='agency'?ctx?.membership?.organization_name:null)||ctx?.subscription?.plan_name||C.label),root=document.documentElement;root.style.setProperty('--navy',primary);root.style.setProperty('--navy2',darkenHex(primary,.3));root.style.setProperty('--blue',primary);root.style.setProperty('--orange',accent);document.body.dataset.whiteLabel='true';const navTitle=document.querySelector('.nav-title');if(navTitle)navTitle.textContent=name;const crumb=document.querySelector('.crumb');if(crumb)crumb.textContent=`${name} / ${cfgPage(page()).label}`;const kicker=document.querySelector('.hero-kicker');if(kicker)kicker.textContent=name;const foot=document.querySelector('.side-foot div:last-child');if(foot)foot.textContent='Employer Portal';document.title=`${cfgPage(page()).label} | ${name}`;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',primary)}
@@ -139,7 +139,7 @@ function modal(title,fields,onSave){
   const fieldHtml=fields.map(f=>{let input;if(f.type==='select')input=`<select name="${esc(f.name)}" ${f.required?'required':''}>${(f.options||[]).map(o=>`<option value="${esc(o.value)}" ${String(o.value)===String(f.value??'')?'selected':''}>${esc(o.label)}</option>`).join('')}</select>`;else if(f.type==='textarea')input=`<textarea name="${esc(f.name)}" rows="4" ${f.required?'required':''}>${esc(f.value||'')}</textarea>`;else input=`<input type="${esc(f.type||'text')}" name="${esc(f.name)}" value="${esc(f.value||'')}" ${f.required?'required':''}>`;return `<div class="field ${f.full?'full':''}"><label>${esc(f.label)}</label>${input}</div>`}).join('');
   b.innerHTML=`<form class="modal${fields.length>=10?' modal-wide':''}"><h2>${esc(title)}</h2><div class="modal-grid">${fieldHtml}</div><div class="modal-actions"><button type="button" class="btn ghost" data-cancel>Cancel</button><button type="submit" class="btn primary">Save</button></div></form>`;
   document.body.appendChild(b);b.querySelector('[data-cancel]').onclick=()=>b.remove();
-  b.querySelector('form').onsubmit=async e=>{e.preventDefault();try{const v=Object.fromEntries(new FormData(e.currentTarget).entries());await onSave(v);b.remove();await render(window.portalCtx)}catch(err){alert(err.message||String(err))}};
+  b.querySelector('form').onsubmit=async e=>{e.preventDefault();try{const v=Object.fromEntries(new FormData(e.currentTarget).entries());await onSave(v);b.remove();await render(window.portalCtx)}catch(err){S4UDialog.alert(err.message||String(err))}};
 }
 function setSubtitle(v){$('#subtitle').textContent=v}
 function addAction(label,fn,secondary=false){const b=document.createElement('button');b.className=`btn ${secondary?'secondary':'primary'}`;b.textContent=label;b.onclick=fn;$('#actions').appendChild(b)}
@@ -422,7 +422,7 @@ function ctpaServiceRequestModal(d,service){
   ];
   modal(`Request ${service.name}`,fields,async v=>{
     const out=await invoke('workforce-employer-management',{action:'order_ctpa_service',service_id:service.id,...v});
-    alert(`Service request ${out.order?.order_number||''} was sent to ${seller}.`);
+    S4UDialog.alert(`Service request ${out.order?.order_number||''} was sent to ${seller}.`);
   });
 }
 function bindCtpaServices(d){document.querySelectorAll('[data-ctpa-service]').forEach(b=>b.onclick=()=>{const service=(d.services||[]).find(x=>String(x.id)===String(b.dataset.ctpaService));if(service)ctpaServiceRequestModal(d,service)})}
